@@ -1,4 +1,4 @@
-
+import functools
 # Comment
 MINING_REWARD = 10
 
@@ -21,15 +21,21 @@ def get_balance(participant):
     tx_sender = [[tx['amount'] for tx in block['transactions'] if tx['sender'] == participant] for block in blockchain]
     open_tx_sender = [tx['amount'] for tx in open_transactions if tx['sender'] == participant]
     tx_sender.append(open_tx_sender)
-    amount_sent = 0
-    for tx in tx_sender:
-        if len(tx) > 0:
-            amount_sent += tx[0]
+
+    amount_sent = functools.reduce(lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0, tx_sender, 0)
+
     tx_recipient = [[tx['amount'] for tx in block['transactions'] if tx['recipient'] == participant] for block in blockchain]
-    amount_received = 0
-    for tx in tx_recipient:
-        if len(tx) > 0:
-            amount_received += tx[0]
+    amount_received = functools.reduce(lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0, tx_recipient, 0)
+
+    # amount_sent = 0
+    # for tx in tx_sender:
+    #     if len(tx) > 0:
+    #         amount_sent += tx[0]
+    # tx_recipient = [[tx['amount'] for tx in block['transactions'] if tx['recipient'] == participant] for block in blockchain]
+    # amount_received = 0
+    # for tx in tx_recipient:
+    #     if len(tx) > 0:
+    #         amount_received += tx[0]
     return amount_received - amount_sent
 
 
@@ -61,16 +67,21 @@ def add_transaction(recipient, sender=owner,  amount=1.0):
 
 
 def mine_block():
+    """Create a new block and add open transactions to it."""
+    # Fetch the currently last block of the blockchain
     last_block = blockchain[-1]
+    # Hash the last block (=> to be able to compare it to the stored hash value)
     hashed_block = hash_block(last_block)
+    # Miners should be rewarded, so let's create a reward transaction
     reward_transaction = {
         'sender': 'MINING',
         'recipient': owner,
         'amount': MINING_REWARD
     }
-
+    # Copy transaction instead of manipulating the original open_transactions list
+    # This ensures that if for some reason the mining should fail, we don't have the reward transaction stored in the open transactions
     copied_transactions = open_transactions[:]
-    open_transactions.append(reward_transaction)
+    copied_transactions.append(reward_transaction)
     block = {
         'previous_hash': hashed_block,
         'index': len(blockchain),
@@ -164,7 +175,7 @@ while waiting_for_input:
         print_blockchain_elements()
         print('Invalid blockchain!')
         break
-    print(get_balance('Mikko'))
+    print('Balance of {}: {:6.2f}'.format('Mikko', get_balance('Mikko')))
 else:
     print('User left!')
 
