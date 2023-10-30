@@ -1,7 +1,10 @@
 from functools import reduce
 import hashlib as hl
-import json
 from collections import OrderedDict
+
+from hash_util import hash_string_256, hash_block
+
+
 # Comment
 MINING_REWARD = 10
 
@@ -17,16 +20,9 @@ owner = 'Mikko'
 participants = {'Mikko'}
 
 
-
-
-def hash_block(block):
-    return hl.sha256(json.dumps(block, sort_keys=True).encode()).hexdigest()
-    # return '-'.join([str(block[key]) for key in block])
-
-
 def valid_proof(transactions, last_hash, proof):
     guess = (str(transactions) + str(last_hash) + str(proof)).encode()
-    guess_hash = hl.sha256(guess).hexdigest()
+    guess_hash = hash_string_256(guess)
     print(guess_hash)
     return guess_hash[0:2] == '00'
 
